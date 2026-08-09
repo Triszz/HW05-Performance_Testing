@@ -40,18 +40,19 @@ Thông qua việc prompt AI hỗ trợ cấu hình, các thông số thực tế
 
 ### 1.3. Human Review & Script Fixes
 
-Dựa trên nguyên tắc "AI-First strategy" và yêu cầu đánh giá phê bình (Critical review) của đồ án, em đã rà soát kỹ lưỡng kịch bản do AI sinh ra và phát hiện những lỗ hổng nghiêm trọng. Dưới đây là phân tích và cách em can thiệp (Human Review) để kịch bản có thể chạy thực tế:
+Dựa trên nguyên tắc "AI-First strategy" và yêu cầu đánh giá phê bình (Critical review) của đồ án, em đã rà soát kỹ lưỡng kịch bản do AI sinh ra. Thay vì chỉ nhìn vào kết quả "màu xanh" (Pass) của JMeter, em đã phân tích sâu vào payload và phát hiện sự kết hợp giữa lỗ hổng của AI và khiếm khuyết của hệ thống:
 
 - **What AI got wrong or missed:**
-  Khi thiết kế kịch bản Spike Test cho API `POST /api/register`, AI đã tạo ra một tập dữ liệu CSV tĩnh (`users_register.csv`). Khi chạy thực tế với lượng tải 150 Virtual Users đồng loạt truy cập trong 1 giây, dữ liệu tĩnh này ngay lập tức gây ra đụng độ (Data Collision). Hệ thống Backend trả về hàng loạt mã lỗi **HTTP 409 Conflict** (Email đã tồn tại), làm thất bại toàn bộ các request phía sau.
-  Bên cạnh đó, do đặc thù API `/api/register` không có cơ chế khóa tài khoản khi thao tác liên tục, AI đã hoàn toàn bỏ qua việc xử lý **"account-lockout handling"** như một kịch bản Auth-heavy tiêu chuẩn.
+  Đối với kịch bản Spike Test (API `POST /api/register`), AI đã phạm phải 2 sai lầm:
+  1. Sử dụng dữ liệu tĩnh từ CSV, dẫn đến việc đẩy 150 request có cùng một địa chỉ email lên server trong 1 giây.
+  2. Kịch bản của AI mắc lỗi **"Weak Assertions"** (chỉ dựa vào HTTP Status 200). Nó không hề có cơ chế kiểm tra tính toàn vẹn của dữ liệu sau khi đăng ký. Thêm vào đó, AI đã bỏ qua việc xử lý **"account-lockout handling"** do thiếu ngữ cảnh về đặc thù của API này.
 
 - **Why AI missed them:**
-  AI thiếu đi ngữ cảnh hệ thống (Contextual Awareness) về các ràng buộc cơ sở dữ liệu (UNIQUE constraint của cột email). Nó chỉ máy móc sinh dữ liệu dạng text tĩnh để nạp vào CSV mà không hiểu được đặc tính đồng thời (Concurrency) của Spike Test. Thêm vào đó, do Prompt chỉ yêu cầu sinh test plan mà không cung cấp đặc tả luồng bảo mật (Security Flow), AI đã không đưa ra được cảnh báo về việc API Register thiếu vắng cơ chế Account Lockout.
+  AI chỉ tập trung vào việc tạo ra đủ tải (Load generation) theo đúng Prompt mà thiếu đi tư duy kiểm thử nghiệp vụ (Business Logic Validation). AI mặc định rằng hệ thống SUT hoạt động hoàn hảo và sẽ tự động chặn các luồng dữ liệu sai (như trùng email), nên nó không thiết lập các Assertion chặt chẽ để rào lỗi.
 
-- **How I fixed it (Human Intervention):**
-  Thay vì lãng phí thời gian sinh hàng ngàn dòng CSV động, em đã can thiệp trực tiếp vào file `23127503_Spike_20260809.jmx` trên JMeter. Trong Body Data của HTTP Request, em đã chủ động chèn thêm hàm nội tại của JMeter là `${__time()}` vào đuôi email (Cụ thể: `"email": "${base_email}${__time()}@domain.com"`).
-  Việc này giúp mỗi request trong số 150 Threads đều được đính kèm một dãy timestamp mili-giây duy nhất, đảm bảo tính Toàn vẹn dữ liệu (Data Integrity). Mặc dù không thể test "Account Lockout" ở endpoint này, việc xử lý thành công Data Collision đã giúp kịch bản Spike Test chạy mượt mà, trả về mã 200 OK cho toàn bộ request.
+- **How I fixed it (Human Intervention) & Defect Discovery:**
+  Khi chạy kịch bản tĩnh của AI, tất cả 150 requests đều trả về `200 OK`. Nhờ việc tự đánh giá kết quả (Human Review) thay vì tin tưởng mù quáng vào AI, em đã phát hiện ra một **Lỗ hổng logic nghiêm trọng của SUT**: Hệ thống hoàn toàn không có ràng buộc duy nhất (Unique Constraint) cho Email, cho phép tạo hàng trăm tài khoản trùng lặp.
+  Để fix kịch bản cho chuẩn mực, em đã chủ động thêm hàm `${__time()}` vào cấu hình email trong JMeter (`"email": "${base_email}${__time()}@domain.com"`) để đảm bảo kịch bản Performance Test sinh ra dữ liệu sạch và đúng chuẩn thực tế nhất, tránh làm ô nhiễm Database của hệ thống.
 
 ### 1.4. Execution Evidence
 

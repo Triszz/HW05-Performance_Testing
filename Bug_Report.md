@@ -11,12 +11,18 @@
 
 ---
 
-## Issue 2: [Data Collision] HTTP 409 Conflict khi chạy Spike Test chức năng Đăng ký
+## Issue 2: [Functional Bug] Hệ thống cho phép đăng ký hàng loạt tài khoản trùng Email
 
 - **Endpoint:** `POST /api/register`
-- **Type:** Test Script Defect / Functional Limitation
-- **Description:** Khi thực thi kịch bản Spike Test với 150 Virtual Users dội tải vào hệ thống trong 1 giây, cơ sở dữ liệu gặp hiện tượng đụng độ dữ liệu (Data Collision) nghiêm trọng. Do script ban đầu do AI sinh ra chỉ sử dụng dữ liệu tĩnh từ CSV, các threads đồng thời gửi cùng một địa chỉ email lên server. Hệ thống lập tức từ chối và trả về mã lỗi `409 Conflict` (Email đã tồn tại trong hệ thống). Lỗi này làm thất bại toàn bộ kịch bản đo lường hiệu năng.
-- **Resolution (Khắc phục):** Đã khắc phục trực tiếp trong kịch bản JMeter bằng cách áp dụng hàm `${__time()}` vào đuôi chuỗi email trong payload JSON để đảm bảo tính duy nhất (Unique constraint) của mỗi request. Kịch bản sau đó đã Pass 100%.
+
+- **Type:** Functional Bug / Security Issue
+
+- **Description:** Trong quá trình chạy Spike Test với 150 Threads sử dụng cùng một địa chỉ email tĩnh (do kịch bản AI sinh ra), toàn bộ 150 requests đều trả về `200 OK - User registered successfully`. Kiểm tra lại Database cho thấy hệ thống đã thực sự tạo ra 150 user khác nhau (ID khác nhau) nhưng dùng chung một địa chỉ Email. Hệ thống đã thiếu sót hoàn toàn việc kiểm tra Unique Constraint ở tầng Database và Validation ở Backend, gây rủi ro lớn về bảo mật và quản lý định danh.
+
 - **GitHub Issue Link:** `[Tạo 1 issue trên Github Repo của bạn mô tả lỗi này và dán link vào đây]`
+
 - **Evidence (Screenshot):**
-  `[Chèn ảnh màn hình View Results Tree báo lỗi đỏ HTTP 409 vào đây]`
+
+  ![alt text](images/image.png)
+
+  ![alt text](images/image-1.png)
