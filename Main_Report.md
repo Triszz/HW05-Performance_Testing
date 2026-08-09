@@ -38,7 +38,22 @@ Thông qua việc prompt AI hỗ trợ cấu hình, các thông số thực tế
 - **Spike Test (Auth):** 150 Threads, Ramp-up 1s, Loop 1. Không sử dụng think-time để tạo ra một cú shock lưu lượng (burst traffic) tức thì vào hệ thống.
 - **Stress Test (Transactional):** 100 Threads, Ramp-up 100s, Duration 5 phút. Áp dụng `Gaussian Random Timer` (~500ms) để giả lập tốc độ thao tác nhập liệu liên tục của Admin.
 
-### 1.3. Execution Evidence
+### 1.3. Human Review & Script Fixes
+
+Dựa trên nguyên tắc "AI-First strategy" và yêu cầu đánh giá phê bình (Critical review) của đồ án, em đã rà soát kỹ lưỡng kịch bản do AI sinh ra và phát hiện những lỗ hổng nghiêm trọng. Dưới đây là phân tích và cách em can thiệp (Human Review) để kịch bản có thể chạy thực tế:
+
+- **What AI got wrong or missed:**
+  Khi thiết kế kịch bản Spike Test cho API `POST /api/register`, AI đã tạo ra một tập dữ liệu CSV tĩnh (`users_register.csv`). Khi chạy thực tế với lượng tải 150 Virtual Users đồng loạt truy cập trong 1 giây, dữ liệu tĩnh này ngay lập tức gây ra đụng độ (Data Collision). Hệ thống Backend trả về hàng loạt mã lỗi **HTTP 409 Conflict** (Email đã tồn tại), làm thất bại toàn bộ các request phía sau.
+  Bên cạnh đó, do đặc thù API `/api/register` không có cơ chế khóa tài khoản khi thao tác liên tục, AI đã hoàn toàn bỏ qua việc xử lý **"account-lockout handling"** như một kịch bản Auth-heavy tiêu chuẩn.
+
+- **Why AI missed them:**
+  AI thiếu đi ngữ cảnh hệ thống (Contextual Awareness) về các ràng buộc cơ sở dữ liệu (UNIQUE constraint của cột email). Nó chỉ máy móc sinh dữ liệu dạng text tĩnh để nạp vào CSV mà không hiểu được đặc tính đồng thời (Concurrency) của Spike Test. Thêm vào đó, do Prompt chỉ yêu cầu sinh test plan mà không cung cấp đặc tả luồng bảo mật (Security Flow), AI đã không đưa ra được cảnh báo về việc API Register thiếu vắng cơ chế Account Lockout.
+
+- **How I fixed it (Human Intervention):**
+  Thay vì lãng phí thời gian sinh hàng ngàn dòng CSV động, em đã can thiệp trực tiếp vào file `23127503_Spike_20260809.jmx` trên JMeter. Trong Body Data của HTTP Request, em đã chủ động chèn thêm hàm nội tại của JMeter là `${__time()}` vào đuôi email (Cụ thể: `"email": "${base_email}${__time()}@domain.com"`).
+  Việc này giúp mỗi request trong số 150 Threads đều được đính kèm một dãy timestamp mili-giây duy nhất, đảm bảo tính Toàn vẹn dữ liệu (Data Integrity). Mặc dù không thể test "Account Lockout" ở endpoint này, việc xử lý thành công Data Collision đã giúp kịch bản Spike Test chạy mượt mà, trả về mã 200 OK cho toàn bộ request.
+
+### 1.4. Execution Evidence
 
 _Đính kèm ảnh chụp màn hình hiển thị CÙNG LÚC phần mềm JMeter đang chạy và Task Manager/htop cho 3 kịch bản:_
 
@@ -46,11 +61,9 @@ _Đính kèm ảnh chụp màn hình hiển thị CÙNG LÚC phần mềm JMeter
 - **Ảnh Spike Test:**
 - **Ảnh Stress Test:**
 
-### 1.4. Endurance Threshold
+### 1.5. Endurance Threshold
 
 - Kết quả chạy Soak/Endurance test trong 10-15 phút: `[Điền phân tích và thông số phần cứng khi duy trì tải lâu dài]`
-
----
 
 ## Task 2: AI Analysis and Misinterpretation Hunt
 
