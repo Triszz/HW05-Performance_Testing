@@ -1,0 +1,6 @@
+name,price,description,image_url,category_id
+"Laptop Gaming",25000000,"Laptop cấu hình cao","http://example.com/img1.jpg",1
+"Chuột không dây",500000,"Chuột bluetooth","http://example.com/img2.jpg",2
+"Bàn phím cơ",1200000,"Bàn phím cơ Red Switch","http://example.com/img3.jpg",2
+"Màn hình 24 inch",3500000,"Màn hình Full HD","http://example.com/img4.jpg",3
+"Tai nghe chống ồn",2000000,"Tai nghe over-ear","http://example.com/img5.jpg",4
