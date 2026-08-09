@@ -24,19 +24,19 @@
 
 ### 1.1. Scenario Pairing & Justification
 
-_Lập luận lý do tại sao ghép cặp 3 loại test này với 3 endpoint tương ứng:_
+Dựa trên đặc thù của hệ thống SUT, em đã phân tích và thiết lập sự ánh xạ 1:1 giữa các nhóm API và các loại hình kiểm thử hiệu năng như sau:
 
-- **Read-heavy (`GET /api/products/:id`) ➔ Load Test:** `[Giải thích lý do]`
-- **Auth-heavy (`POST /api/register`) ➔ Spike Test:** `[Giải thích lý do]`
-- **Transactional (`POST /api/products`) ➔ Stress Test:** `[Giải thích lý do]`
+- **Read-heavy (`GET /api/products/:id`) ➔ Load Test:** Kịch bản này vô cùng phù hợp để đánh giá hiệu năng hệ thống khi có một lượng lớn người dùng duy trì việc lướt xem chi tiết các sản phẩm khác nhau. Hệ thống chủ yếu thực hiện các lệnh `SELECT` từ Database và trả về JSON.
+- **Auth-heavy (`POST /api/register`) ➔ Spike Test:** Chức năng đăng ký yêu cầu Backend phải thực hiện thuật toán băm (hashing) mật khẩu - một tác vụ cực kỳ ngốn CPU. Kịch bản Spike mô phỏng một đợt tăng vọt người dùng đột ngột (ví dụ: mở cổng đăng ký săn sale lúc 0h), giúp kiểm tra xem CPU có bị "thắt cổ chai" (bottleneck) khi xử lý đồng loạt hàng trăm phép băm hay không.
+- **Transactional (`POST /api/products`) ➔ Stress Test:** Chức năng thêm sản phẩm yêu cầu hệ thống phải xác thực JSON payload, kiểm tra khóa ngoại (category_id) và thực hiện lệnh `INSERT` vào Database. Sử dụng Stress Test cho API này giúp ép hệ thống thực hiện liên tục các giao dịch Write-heavy, qua đó tìm ra "điểm gãy" (breaking point) của Database dưới áp lực cao.
 
-### 1.2. Human Review & Script Fixes
+### 1.2. AI-Suggested Parameters
 
-_Phân tích những lỗi AI đã mắc phải khi sinh kịch bản và cách khắc phục:_
+Thông qua việc prompt AI hỗ trợ cấu hình, các thông số thực tế (realistic parameters) được thiết lập cho 3 Thread Groups nhằm phản ánh đúng hành vi người dùng và mục tiêu kiểm thử:
 
-- **What AI got wrong or missed:** `[Đặc biệt nhấn mạnh vào lỗi tạo dữ liệu tĩnh gây văng lỗi HTTP 409 Conflict ở API Register, hoặc các thông số Ramp-up/Think-time phi lý]`
-- **Why AI missed them:** `[Giải thích do AI thiếu ngữ cảnh hệ thống, không hiểu tính duy nhất của dữ liệu, v.v.]`
-- **How I fixed it:** `[Nêu cách dùng hàm ${__time()} hoặc các cấu hình đã tự điều chỉnh trong JMeter]`
+- **Load Test (Read):** 50 Threads, Ramp-up 50s, Duration 10 phút. Áp dụng `Uniform Random Timer` (1000ms - 3000ms) để mô phỏng think-time của người dùng thực tế đang đọc mô tả sản phẩm.
+- **Spike Test (Auth):** 150 Threads, Ramp-up 1s, Loop 1. Không sử dụng think-time để tạo ra một cú shock lưu lượng (burst traffic) tức thì vào hệ thống.
+- **Stress Test (Transactional):** 100 Threads, Ramp-up 100s, Duration 5 phút. Áp dụng `Gaussian Random Timer` (~500ms) để giả lập tốc độ thao tác nhập liệu liên tục của Admin.
 
 ### 1.3. Execution Evidence
 
