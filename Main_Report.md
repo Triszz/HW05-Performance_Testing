@@ -12,11 +12,12 @@
 
 ## Hardware Specifications & Environment
 
-- **CPU:** `[VD: Intel Core i7-12700H]`
-- **RAM:** `[VD: 16GB DDR4]`
-- **OS:** `[VD: Windows 11 / Ubuntu 22.04]`
-- **Hostname:** `[Hostname khớp với HW04]`
-- _(Đính kèm ảnh screenshot dxdiag hoặc screenfetch tại đây)_
+- **CPU:** 12th Gen Intel(R) Core(TM) i5-1240P (16 CPUs), ~1.7GHz
+- **RAM:** 16GB
+- **OS:** Windows 11
+- **Hostname:** THANHTRI
+
+  ![alt text](images/Hardware_Specs.png)
 
 ---
 
@@ -59,12 +60,19 @@ Dựa trên nguyên tắc "AI-First strategy" và yêu cầu đánh giá phê b�
 _Đính kèm ảnh chụp màn hình hiển thị CÙNG LÚC phần mềm JMeter đang chạy và Task Manager/htop cho 3 kịch bản:_
 
 - **Ảnh Load Test:**
+
+  ![alt text](images/Evidence_LoadTest.png)
+
 - **Ảnh Spike Test:**
 - **Ảnh Stress Test:**
 
 ### 1.5. Endurance Threshold
 
-- Kết quả chạy Soak/Endurance test trong 10-15 phút: `[Điền phân tích và thông số phần cứng khi duy trì tải lâu dài]`
+Để xác định ngưỡng chịu đựng của phần cứng, kịch bản Load Test (Read-heavy) đã được cấu hình chạy ngâm (Soak/Endurance Test) liên tục trong 10 phút với 50 Virtual Users[cite: 1]. Dựa trên số liệu thu thập được từ hệ thống giám sát và báo cáo của JMeter, hệ thống ghi nhận các thông số như sau:
+
+- **Maximum Stable RPS (Throughput):** Hệ thống duy trì tải cực kỳ ổn định ở mức **~24.0 req/sec** (chính xác là 23.98 req/sec) trong suốt 10 phút mà không phát sinh bất kỳ lỗi nào (Error Rate: 0%)[cite: 3]. Tốc độ phản hồi (Response Time) vô cùng xuất sắc với mức trung bình (Mean) là 2.33ms và 95th percentile (pct2) chỉ đạt 4.0ms[cite: 3].
+- **Memory Ceiling & Resource Usage:** Mặc dù CPU hoạt động khá nhẹ nhàng (chỉ ở mức ~14% cho chip Intel Core i5-1240P), nhưng **RAM đã chạm đỉnh 14.4 GB / 15.7 GB (tức 92% công suất phần cứng)**.
+- **Kết luận:** Ngưỡng chịu đựng (Endurance Threshold) của hệ thống SUT trên phần cứng hiện tại bị giới hạn bởi bộ nhớ (Memory-bound). Backend xử lý các tác vụ truy xuất dữ liệu rất nhanh, nhưng nếu duy trì tải này lâu hơn 10 phút hoặc tăng thêm số lượng Virtual Users, server có nguy cơ cao bị crash do tràn RAM (Out of Memory) thay vì quá tải CPU.
 
 ## Task 2: AI Analysis and Misinterpretation Hunt
 
