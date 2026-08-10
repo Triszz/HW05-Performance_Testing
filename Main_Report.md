@@ -64,6 +64,10 @@ _Đính kèm ảnh chụp màn hình hiển thị CÙNG LÚC phần mềm JMeter
   ![alt text](images/Evidence_LoadTest.png)
 
 - **Ảnh Spike Test:**
+
+  ![alt text](images/Evidence_SpikeTest.png)
+  _(**Nhận xét:** Kịch bản Spike dội 150 requests đăng ký trong 1 giây để ép tải CPU bằng thuật toán Hashing. Tuy nhiên, hệ thống xử lý xuất sắc với 0% lỗi[cite: 3]. CPU chỉ tăng nhẹ lên mức 11%, thời gian phản hồi tối đa đạt 169ms[cite: 3]. Điều này cho thấy sức mạnh phần cứng hiện tại hoàn toàn dư sức đáp ứng, hoặc thuật toán mã hóa mật khẩu của Backend đang sử dụng chi phí tính toán (cost factor) khá thấp)._
+
 - **Ảnh Stress Test:**
 
 ### 1.5. Endurance Threshold

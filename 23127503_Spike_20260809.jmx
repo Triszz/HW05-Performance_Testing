@@ -32,7 +32,7 @@
           <stringProp name="shareMode">shareMode.all</stringProp>
         </CSVDataSet>
         <hashTree/>
-        <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager">
+        <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
           <collectionProp name="HeaderManager.headers">
             <elementProp name="" elementType="Header">
               <stringProp name="Header.name">Content-Type</stringProp>
@@ -41,7 +41,7 @@
           </collectionProp>
         </HeaderManager>
         <hashTree/>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST Register API">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST Register API" enabled="true">
           <stringProp name="HTTPSampler.domain">localhost</stringProp>
           <stringProp name="HTTPSampler.port">3000</stringProp>
           <stringProp name="HTTPSampler.protocol">http</stringProp>
@@ -99,7 +99,7 @@
               <connectTime>true</connectTime>
             </value>
           </objProp>
-          <stringProp name="filename"></stringProp>
+          <stringProp name="filename">23127503_Spike_20260809.jtl</stringProp>
         </ResultCollector>
         <hashTree/>
       </hashTree>
