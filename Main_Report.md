@@ -69,13 +69,16 @@ _Đính kèm ảnh chụp màn hình hiển thị CÙNG LÚC phần mềm JMeter
 - **Ảnh Load Test:**
 
   ![alt text](images/Evidence_LoadTest.png)
+  _(**Nhận xét:** Kịch bản Load Test mô phỏng lượng người dùng lướt xem sản phẩm (Read-heavy) duy trì ổn định trong 10 phút. Báo cáo ghi nhận hệ thống hoạt động hoàn hảo với tỷ lệ lỗi 0% và Throughput đạt ~24 req/sec. Thời gian phản hồi trung bình cực kỳ ấn tượng, chỉ ở mức 2.33ms. Tuy nhiên, điểm đáng chú ý nhất hiển thị trên Task Manager là mức độ ngốn RAM của tiến trình Backend khi chạm ngưỡng 92% (14.4GB), trong khi CPU chỉ hoạt động ở mức 14%. Điều này phản ánh rõ đặc thù của các tác vụ truy vấn Database liên tục lấy dữ liệu, đồng thời chỉ ra RAM chính là điểm nghẽn (bottleneck) đầu tiên của hệ thống nếu tiếp tục mở rộng quy mô (scale)._
 
 - **Ảnh Spike Test:**
 
   ![alt text](images/Evidence_SpikeTest.png)
-  _(**Nhận xét:** Kịch bản Spike dội 150 requests đăng ký trong 1 giây để ép tải CPU bằng thuật toán Hashing. Tuy nhiên, hệ thống xử lý xuất sắc với 0% lỗi[cite: 3]. CPU chỉ tăng nhẹ lên mức 11%, thời gian phản hồi tối đa đạt 169ms[cite: 3]. Điều này cho thấy sức mạnh phần cứng hiện tại hoàn toàn dư sức đáp ứng, hoặc thuật toán mã hóa mật khẩu của Backend đang sử dụng chi phí tính toán (cost factor) khá thấp)._
+  _(**Nhận xét:** Kịch bản Spike dội 150 requests đăng ký trong 1 giây. Ban đầu, kịch bản được kỳ vọng sẽ làm "thắt cổ chai" CPU do hệ thống phải xử lý đồng loạt hàng trăm phép băm (Hashing) mật khẩu. Tuy nhiên, kết quả cho thấy CPU chỉ tăng rất nhẹ lên mức 11% và thời gian phản hồi vô cùng nhanh (Max 169ms). Sự bất thường về hiệu năng này đã dẫn đến một phát hiện động trời khi đối chiếu với Database: Hệ thống KHÔNG HỀ thực hiện mã hóa mật khẩu. Việc bỏ qua hoàn toàn chi phí tính toán Hashing ở tầng Backend chính là nguyên nhân khiến hệ thống không bị quá tải CPU như kịch bản gốc dự đoán)._
 
 - **Ảnh Stress Test:**
+  ![alt text](images/Evidence_StressTest.png)
+  _(**Nhận xét:** Kịch bản Stress Test thực hiện liên tục các giao dịch thêm sản phẩm (Write-heavy) trong 5 phút. Kết quả ghi nhận hệ thống SUT xử lý xuất sắc lượng tải lớn với tỷ lệ lỗi 0% trên tổng số hơn 60,000 requests[cite: 5]. Throughput đạt mức cao ~202.5 req/sec với thời gian phản hồi trung bình chỉ 10.2ms[cite: 5]. Đặc biệt, biểu đồ Task Manager cho thấy Disk I/O đã tăng vọt lên mức 29% (so với 0-1% ở Load/Spike), phản ánh chính xác áp lực ghi dữ liệu liên tục xuống Database. Dù vậy, hệ thống vẫn duy trì sự ổn định và chưa chạm đến "điểm gãy" (breaking point) dưới áp lực 100 Virtual Users hiện tại)._
 
 ### 1.5. Endurance Threshold
 

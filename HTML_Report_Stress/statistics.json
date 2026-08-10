@@ -1,0 +1,34 @@
+{
+  "POST Insert Product API" : {
+    "transaction" : "POST Insert Product API",
+    "sampleCount" : 60683,
+    "errorCount" : 0,
+    "errorPct" : 0.0,
+    "meanResTime" : 10.19689204554824,
+    "medianResTime" : 6.0,
+    "minResTime" : 2.0,
+    "maxResTime" : 177.0,
+    "pct1ResTime" : 15.0,
+    "pct2ResTime" : 20.0,
+    "pct3ResTime" : 40.0,
+    "throughput" : 202.51428342588636,
+    "receivedKBytesPerSec" : 60.678601825099776,
+    "sentKBytesPerSec" : 71.94794431195102
+  },
+  "Total" : {
+    "transaction" : "Total",
+    "sampleCount" : 60683,
+    "errorCount" : 0,
+    "errorPct" : 0.0,
+    "meanResTime" : 10.19689204554824,
+    "medianResTime" : 6.0,
+    "minResTime" : 2.0,
+    "maxResTime" : 177.0,
+    "pct1ResTime" : 15.0,
+    "pct2ResTime" : 20.0,
+    "pct3ResTime" : 40.0,
+    "throughput" : 202.51428342588636,
+    "receivedKBytesPerSec" : 60.678601825099776,
+    "sentKBytesPerSec" : 71.94794431195102
+  }
+}
