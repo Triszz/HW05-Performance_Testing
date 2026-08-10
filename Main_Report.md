@@ -44,16 +44,23 @@ Thông qua việc prompt AI hỗ trợ cấu hình, các thông số thực tế
 Dựa trên nguyên tắc "AI-First strategy" và yêu cầu đánh giá phê bình (Critical review) của đồ án, em đã rà soát kỹ lưỡng kịch bản do AI sinh ra. Thay vì chỉ nhìn vào kết quả "màu xanh" (Pass) của JMeter, em đã phân tích sâu vào payload và phát hiện sự kết hợp giữa lỗ hổng của AI và khiếm khuyết của hệ thống:
 
 - **What AI got wrong or missed:**
-  Đối với kịch bản Spike Test (API `POST /api/register`), AI đã phạm phải 2 sai lầm:
-  1. Sử dụng dữ liệu tĩnh từ CSV, dẫn đến việc đẩy 150 request có cùng một địa chỉ email lên server trong 1 giây.
-  2. Kịch bản của AI mắc lỗi **"Weak Assertions"** (chỉ dựa vào HTTP Status 200). Nó không hề có cơ chế kiểm tra tính toàn vẹn của dữ liệu sau khi đăng ký. Thêm vào đó, AI đã bỏ qua việc xử lý **"account-lockout handling"** do thiếu ngữ cảnh về đặc thù của API này.
+  - Đối với kịch bản **Spike Test** (API `POST /api/register`), AI đã phạm phải 2 sai lầm:
+    1. Sử dụng dữ liệu tĩnh từ CSV, dẫn đến việc đẩy 150 request có cùng một địa chỉ email lên server trong 1 giây.
+    2. Kịch bản của AI mắc lỗi **"Weak Assertions"** (chỉ dựa vào HTTP Status 200). Nó không hề có cơ chế kiểm tra tính toàn vẹn của dữ liệu sau khi đăng ký. Thêm vào đó, AI đã bỏ qua việc xử lý **"account-lockout handling"** do thiếu ngữ cảnh về đặc thù của API này.
+
+  - Đối với kịch bản **Stress Test** (`POST /api/products`), AI sinh ra file `products_insert.csv` chứa các chuỗi được bao bọc bởi dấu ngoặc kép (VD: `"Laptop Gaming"`). Khi nội suy vào payload JSON trong JMeter, nó tạo ra cú pháp JSON không hợp lệ (`"name": ""Laptop...""`), khiến 100% request ban đầu bị server từ chối với lỗi `400 Bad Request`.
 
 - **Why AI missed them:**
-  AI chỉ tập trung vào việc tạo ra đủ tải (Load generation) theo đúng Prompt mà thiếu đi tư duy kiểm thử nghiệp vụ (Business Logic Validation). AI mặc định rằng hệ thống SUT hoạt động hoàn hảo và sẽ tự động chặn các luồng dữ liệu sai (như trùng email), nên nó không thiết lập các Assertion chặt chẽ để rào lỗi.
+  - AI chỉ tập trung vào việc tạo ra đủ tải (Load generation) theo đúng Prompt mà thiếu đi tư duy kiểm thử nghiệp vụ (Business Logic Validation). AI mặc định rằng hệ thống SUT hoạt động hoàn hảo và sẽ tự động chặn các luồng dữ liệu sai (như trùng email), nên nó không thiết lập các Assertion chặt chẽ để rào lỗi.
+
+  - Bên cạnh đó, đối với lỗi cú pháp JSON, AI xử lý việc tạo file CSV và cấu hình JMeter như hai tác vụ độc lập (siloed). Dù sinh dữ liệu đúng chuẩn CSV (bọc chuỗi bằng ngoặc kép), AI lại thiếu tư duy tích hợp toàn vẹn (End-to-End Context). Nó không lường trước được hệ quả khi biến số này được nội suy trực tiếp vào một template JSON đã có sẵn ngoặc kép, từ đó phá vỡ hoàn toàn cấu trúc dữ liệu gửi đi.
 
 - **How I fixed it (Human Intervention) & Defect Discovery:**
-  Khi chạy kịch bản tĩnh của AI, tất cả 150 requests đều trả về `200 OK`. Nhờ việc tự đánh giá kết quả (Human Review) thay vì tin tưởng mù quáng vào AI, em đã phát hiện ra một **Lỗ hổng logic nghiêm trọng của SUT**: Hệ thống hoàn toàn không có ràng buộc duy nhất (Unique Constraint) cho Email, cho phép tạo hàng trăm tài khoản trùng lặp.
-  Để fix kịch bản cho chuẩn mực, em đã chủ động thêm hàm `${__time()}` vào cấu hình email trong JMeter (`"email": "${base_email}${__time()}@domain.com"`) để đảm bảo kịch bản Performance Test sinh ra dữ liệu sạch và đúng chuẩn thực tế nhất, tránh làm ô nhiễm Database của hệ thống.
+  - Khi chạy kịch bản tĩnh của AI, tất cả 150 requests đều trả về `200 OK`. Nhờ việc tự đánh giá kết quả (Human Review) thay vì tin tưởng mù quáng vào AI, em đã phát hiện ra một **Lỗ hổng logic nghiêm trọng của SUT**: Hệ thống hoàn toàn không có ràng buộc duy nhất (Unique Constraint) cho Email, cho phép tạo hàng trăm tài khoản trùng lặp.
+
+  - Để fix kịch bản cho chuẩn mực, em đã chủ động thêm hàm `${__time()}` vào cấu hình email trong JMeter (`"email": "${base_email}${__time()}@domain.com"`) để đảm bảo kịch bản Performance Test sinh ra dữ liệu sạch và đúng chuẩn thực tế nhất, tránh làm ô nhiễm Database của hệ thống.
+
+  - Bên cạnh đó, em đã phải thực hiện quá trình tiền xử lý dữ liệu (Data Sanitization) bằng cách tự tay loại bỏ các dấu ngoặc kép thừa trong file CSV do AI sinh ra, đảm bảo HTTP Request mang theo payload JSON chuẩn xác 100% trước khi chính thức ép tải hệ thống.
 
 ### 1.4. Execution Evidence
 
