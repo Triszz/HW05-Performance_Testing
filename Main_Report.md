@@ -139,8 +139,31 @@ Dựa trên đặc thù kiến trúc của hệ thống EShop (đang sử dụng
 
 ### 3.1. Pipeline Model (Flow Chart)
 
-`[Chèn hình ảnh sơ đồ luồng CI/CD chạy Performance Test tự động tại đây]`
+Để đảm bảo hệ thống EShop không bị suy giảm hiệu năng sau mỗi lần cập nhật mã nguồn, em đề xuất mô hình **Continuous Performance Testing** được tích hợp vào quy trình CI/CD.
+
+Mô hình này không chạy mù quáng trên mọi commit, mà sẽ có một bước "lọc" (Filter) để quyết định xem sự thay đổi mã nguồn có đáng để tốn tài nguyên chạy Performance Test hay không. Nếu có, hệ thống sẽ tự động đo lường chỉ số **p95 Response Time** và so sánh với phiên bản gốc (Baseline) để phát hiện sự thụt lùi (Regression).
+
+**Sơ đồ luồng hoạt động (CI/CD Pipeline Flow):**
+
+![Flow Chart](images/Pipeline_Flowchart.png)
+
+**Chi tiết các bước trong Pipeline:**
+
+1. **Commit/PR Trigger:** Lập trình viên đẩy code mới hoặc tạo Pull Request (PR).
+2. **Change Analyzer (Quyết định chạy):** CI pipeline kiểm tra các file bị thay đổi. Nếu chỉ sửa file tĩnh (Markdown, CSS, HTML), bỏ qua chạy Perf Test để tiết kiệm thời gian. Nếu sửa logic Backend, API, hoặc Cấu trúc Database, chuyển sang bước tiếp theo.
+3. **Deploy to Staging:** Tự động triển khai code mới lên môi trường Staging (có phần cứng tương đồng với Production).
+4. **Automated JMeter Execution:** Kích hoạt chạy các kịch bản JMeter (Load, Stress) dưới dạng headless mode (CLI) thông qua các công cụ như Taurus hoặc tự động bằng GitHub Actions.
+5. **p95 Regression Check:** Hệ thống trích xuất chỉ số `p95` từ file log `.jtl` mới và so sánh với `p95` của nhánh `main` (baseline).
+6. **Flagging:** Nếu p95 tăng vượt mức cho phép (ví dụ: chậm hơn 15%), đánh dấu là **Regression**, chặn PR (Block PR) và gửi cảnh báo (Slack/Email). Nếu đạt yêu cầu, tự động phê duyệt (Approve).
 
 ### 3.2. Trade-offs Discussion
 
-`[Thảo luận về sự đánh đổi: Chi phí duy trì server, rủi ro báo động giả (false alarms) khi theo dõi chỉ số p95]`
+Việc tự động hóa Performance Test trong CI/CD mang lại giá trị lớn nhưng cũng đi kèm với những sự đánh đổi (trade-offs) thực tế cần phải quản trị:
+
+- **Cost vs. Coverage (Chi phí duy trì Server so với Độ phủ kiểm thử):**
+  - _Vấn đề:_ Để kết quả Performance Test chính xác, môi trường Staging phải có cấu hình phần cứng (CPU, RAM) giống hệt Production. Việc duy trì server này 24/7 và chi phí tính toán (compute cost) cho các máy ảo sinh tải (Load Injectors) khi có hàng chục PR mỗi ngày là một con số khổng lồ.
+  - _Giải pháp:_ Đánh đổi bằng cách áp dụng **Change Analyzer** (chỉ chạy khi sửa Backend) hoặc giới hạn chạy tự động vào ban đêm (Nightly Builds) thay vì chạy trên mọi commit nhỏ lẻ.
+
+- **False Alarms vs. Reliability (Báo động giả so với Độ tin cậy):**
+  - _Vấn đề:_ Chỉ số `p95` rất nhạy cảm với các yếu tố bên ngoài (Network jitter, Noisy neighbors trên môi trường Cloud). Một cú lag mạng ngẫu nhiên cũng có thể làm `p95` tăng vọt, dẫn đến việc CI pipeline báo cờ đỏ (Red Flag) sai lệch. Điều này gây ra "Báo động giả" (False Alarms), làm gián đoạn luồng làm việc và gây ức chế cho lập trình viên.
+  - _Giải pháp:_ Không dùng một con số cứng nhắc. Thay vào đó, thiết lập một **Ngưỡng dung sai (Tolerance Margin)** (ví dụ: chỉ báo lỗi nếu `p95` tăng quá 15% so với baseline trong 3 lần chạy liên tiếp) và tập trung vào xu hướng dài hạn (Trend Analysis) hơn là một kết quả đơn lẻ.
