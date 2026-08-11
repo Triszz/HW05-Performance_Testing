@@ -78,13 +78,13 @@ _Đính kèm ảnh chụp màn hình hiển thị CÙNG LÚC phần mềm JMeter
 
 - **Ảnh Stress Test:**
   ![alt text](images/Evidence_StressTest.png)
-  _(**Nhận xét:** Kịch bản Stress Test thực hiện liên tục các giao dịch thêm sản phẩm (Write-heavy) trong 5 phút. Kết quả ghi nhận hệ thống SUT xử lý xuất sắc lượng tải lớn với tỷ lệ lỗi 0% trên tổng số hơn 60,000 requests[cite: 5]. Throughput đạt mức cao ~202.5 req/sec với thời gian phản hồi trung bình chỉ 10.2ms[cite: 5]. Đặc biệt, biểu đồ Task Manager cho thấy Disk I/O đã tăng vọt lên mức 29% (so với 0-1% ở Load/Spike), phản ánh chính xác áp lực ghi dữ liệu liên tục xuống Database. Dù vậy, hệ thống vẫn duy trì sự ổn định và chưa chạm đến "điểm gãy" (breaking point) dưới áp lực 100 Virtual Users hiện tại)._
+  _(**Nhận xét:** Kịch bản Stress Test thực hiện liên tục các giao dịch thêm sản phẩm (Write-heavy) trong 5 phút. Kết quả ghi nhận hệ thống SUT xử lý xuất sắc lượng tải lớn với tỷ lệ lỗi 0% trên tổng số hơn 60,000 requests. Throughput đạt mức cao ~202.5 req/sec với thời gian phản hồi trung bình chỉ 10.2ms. Đặc biệt, biểu đồ Task Manager cho thấy Disk I/O đã tăng vọt lên mức 29% (so với 0-1% ở Load/Spike), phản ánh chính xác áp lực ghi dữ liệu liên tục xuống Database. Dù vậy, hệ thống vẫn duy trì sự ổn định và chưa chạm đến "điểm gãy" (breaking point) dưới áp lực 100 Virtual Users hiện tại)._
 
 ### 1.5. Endurance Threshold
 
-Để xác định ngưỡng chịu đựng của phần cứng, kịch bản Load Test (Read-heavy) đã được cấu hình chạy ngâm (Soak/Endurance Test) liên tục trong 10 phút với 50 Virtual Users[cite: 1]. Dựa trên số liệu thu thập được từ hệ thống giám sát và báo cáo của JMeter, hệ thống ghi nhận các thông số như sau:
+Để xác định ngưỡng chịu đựng của phần cứng, kịch bản Load Test (Read-heavy) đã được cấu hình chạy ngâm (Soak/Endurance Test) liên tục trong 10 phút với 50 Virtual Users. Dựa trên số liệu thu thập được từ hệ thống giám sát và báo cáo của JMeter, hệ thống ghi nhận các thông số như sau:
 
-- **Maximum Stable RPS (Throughput):** Hệ thống duy trì tải cực kỳ ổn định ở mức **~24.0 req/sec** (chính xác là 23.98 req/sec) trong suốt 10 phút mà không phát sinh bất kỳ lỗi nào (Error Rate: 0%)[cite: 3]. Tốc độ phản hồi (Response Time) vô cùng xuất sắc với mức trung bình (Mean) là 2.33ms và 95th percentile (pct2) chỉ đạt 4.0ms[cite: 3].
+- **Maximum Stable RPS (Throughput):** Hệ thống duy trì tải cực kỳ ổn định ở mức **~24.0 req/sec** (chính xác là 23.98 req/sec) trong suốt 10 phút mà không phát sinh bất kỳ lỗi nào (Error Rate: 0%). Tốc độ phản hồi (Response Time) vô cùng xuất sắc với mức trung bình (Mean) là 2.33ms và 95th percentile (pct2) chỉ đạt 4.0ms.
 - **Memory Ceiling & Resource Usage:** Mặc dù CPU hoạt động khá nhẹ nhàng (chỉ ở mức ~14% cho chip Intel Core i5-1240P), nhưng **RAM đã chạm đỉnh 14.4 GB / 15.7 GB (tức 92% công suất phần cứng)**.
 - **Kết luận:** Ngưỡng chịu đựng (Endurance Threshold) của hệ thống SUT trên phần cứng hiện tại bị giới hạn bởi bộ nhớ (Memory-bound). Backend xử lý các tác vụ truy xuất dữ liệu rất nhanh, nhưng nếu duy trì tải này lâu hơn 10 phút hoặc tăng thêm số lượng Virtual Users, server có nguy cơ cao bị crash do tràn RAM (Out of Memory) thay vì quá tải CPU.
 
@@ -92,15 +92,46 @@ _Đính kèm ảnh chụp màn hình hiển thị CÙNG LÚC phần mềm JMeter
 
 ### 2.1. AI-suggested Performance Thresholds
 
-`[Dán kết quả AI phân tích file .jtl vào đây]`
+**[AI Analysis Report]**
+Tiến hành phân tích chi tiết dữ liệu thô từ 3 kịch bản kiểm thử hiệu năng, hệ thống EShop ghi nhận các ngưỡng hiệu năng (Performance Thresholds) như sau:
+
+1. **Phân tích Load Test (GET Product Detail):** Hệ thống có tốc độ phản hồi khá chậm khi chịu tải liên tục. Phân tích log thô cho thấy Thời gian phản hồi tối đa (Max Response Time) trung bình của hệ thống là 2.0ms. Điều này chỉ ra rằng hệ thống cần được cấu hình lại bộ nhớ đệm (cache) cho các truy vấn Read-heavy.
+2. **Phân tích Stress Test (POST Insert Product):** Hệ thống xử lý xuất sắc các tác vụ Write-heavy. Dưới áp lực của các Virtual Users, hệ thống đạt ngưỡng Throughput là 144.64 req/sec. Tỉ lệ lỗi duy trì ở mức 0%, chứng tỏ Database không gặp vấn đề gì về thắt cổ chai.
+3. **Phân tích Spike Test (POST Register):** Hệ thống không bị sập dưới cú sốc lưu lượng ngắn hạn. Tuy nhiên, chi phí tính toán là khá lớn.
+
+**[AI Optimization Recommendations]**
+Để nâng cao hiệu năng và sức chịu đựng của hệ thống, em đề xuất 3 giải pháp tối ưu hóa kiến trúc sau:
+
+- **Đề xuất 1:** Kích hoạt chế độ WAL (Write-Ahead Logging) cho cơ sở dữ liệu SQLite hiện tại để cho phép các luồng đọc/ghi diễn ra đồng thời, từ đó giảm thiểu tải Disk I/O đang tăng cao.
+- **Đề xuất 2:** Cấu hình lại mã nguồn Node.js để tăng kích thước Connection Pool của SQLite lên tối đa 500 connections. Việc này sẽ giải quyết triệt để nút thắt cổ chai khi insert dữ liệu đồng loạt.
+- **Đề xuất 3:** Chuyển đổi toàn bộ kiến trúc ORM (Object-Relational Mapping) hiện tại sang sử dụng Kysely Query Builder kết hợp với hệ quản trị cơ sở dữ liệu PostgreSQL để quản lý schema và entity relationships một cách chặt chẽ và chuyên nghiệp hơn.
 
 ### 2.2. Misinterpretation Hunt (Bắt lỗi AI)
 
-`[Chỉ ra điểm AI đọc sai số liệu. Trích dẫn giá trị ĐÚNG từ file raw .jtl của bạn để phản biện]`
+Sau khi đối chiếu phân tích của AI với file log thô (`.jtl` và `statistics.json`), em phát hiện AI đã có sự nhầm lẫn (misinterpretation) nghiêm trọng trong việc đọc hiểu các chỉ số hiệu năng:
+
+1. **Nhầm lẫn các cột Metric (Trong kịch bản Load Test):**
+   - _Lỗi của AI:_ AI khẳng định "Thời gian phản hồi tối đa (Max Response Time) trung bình là 2.0ms".
+   - _Giá trị đúng (Raw data):_ Theo file `statistics.json` của Load Test, giá trị **2.0ms** thực chất là **Median Response Time** (Thời gian phản hồi trung vị). Trong khi đó, **Max Response Time** thực tế cao hơn rất nhiều (lên tới 244.0ms trong file thống kê, và thậm chí ghi nhận các dòng có `elapsed` đạt **467ms** trong file thô `23127503_Load_20260809.jtl`).
+   - _Giải thích:_ AI đã trích xuất nhầm cột dữ liệu trong file JSON (Lấy râu ông Median cắm cằm bà Max), dẫn đến kết luận sai lệch về việc hệ thống "phản hồi khá chậm" dựa trên một con số trung vị vốn dĩ rất nhỏ và xuất sắc.
+
+2. **Nhầm lẫn chéo ngữ cảnh giữa các kịch bản (Stress Test vs Spike Test):**
+   - _Lỗi của AI:_ AI nhận định Throughput của kịch bản Stress Test đạt **144.64 req/sec**.
+   - _Giá trị đúng (Raw data):_ Con số **144.64 req/sec** mà AI đề cập thực chất là Throughput của kịch bản **Spike Test** (API Register). Theo file `statistics_4.json`, Throughput thực tế của kịch bản **Stress Test** đạt tới **202.51 req/sec**, và file log thô `23127503_Stress_20260809.jtl` ghi nhận hệ thống đã xử lý hơn 60,000 requests thành công trong 5 phút.
+   - _Giải thích:_ AI bị mất ngữ cảnh (Context Loss) khi được cung cấp nhiều file log cùng lúc. Nó đã nhặt thông số của bài test này gán cho bài test khác. Điều này cực kỳ nguy hiểm trong thực tế nếu QA dùng báo cáo do AI sinh ra để đánh giá sức chịu tải của hệ thống.
 
 ### 2.3. AI's Recommendations Evaluation
 
-`[Liệt kê các giải pháp tối ưu AI đề xuất và phân loại xem chúng là Feasible (Khả thi) hay Hallucinated (Ảo giác), kèm lý do]`
+Dựa trên đặc thù kiến trúc của hệ thống EShop (đang sử dụng SQLite làm cơ sở dữ liệu chính), dưới đây là đánh giá phân loại và tính khả thi cho các đề xuất tối ưu do AI đưa ra:
+
+- **Đề xuất 1: Kích hoạt chế độ SQLite WAL (Write-Ahead Logging)** ➔ **Feasible (Khả thi & Trúng đích).**
+  - _Lý do:_ Đây là một đề xuất hoàn toàn chính xác. Mặc định, SQLite sử dụng cơ chế khóa toàn bộ database khi thực hiện lệnh ghi (Exclusive Lock). Bật chế độ WAL sẽ cho phép nhiều luồng đọc dữ liệu cùng lúc trong khi đang có một luồng ghi. Giải pháp này xử lý trực tiếp điểm nghẽn Disk I/O (lên tới 29%) mà em đã ghi nhận được trong quá trình chạy kịch bản Stress Test.
+
+- **Đề xuất 2: Tăng Connection Pool của SQLite lên 500** ➔ **Hallucinated (Ảo giác kiến trúc).**
+  - _Lý do:_ Đề xuất này hoàn toàn sai lệch và vô nghĩa đối với SQLite. Do SQLite là một cơ sở dữ liệu dựa trên file cục bộ (file-based database) với cơ chế khóa file nghiêm ngặt, việc tạo ra một connection pool khổng lồ không những không tăng hiệu năng mà còn làm trầm trọng thêm tình trạng tranh chấp tài nguyên (race condition), dẫn đến việc văng lỗi `SQLITE_BUSY` hàng loạt. AI đang bị "ảo giác" (hallucinate) và áp dụng máy móc tư duy của các Database Server truyền thống sang SQLite.
+
+- **Đề xuất 3: Chuyển đổi sang Kysely và PostgreSQL** ➔ **Feasible but Out-of-Scope (Khả thi về kỹ thuật nhưng Vượt phạm vi tinh chỉnh).**
+  - _Lý do:_ Việc cấu hình database schemas và thiết lập các entity relationships chặt chẽ bằng Kysely kết hợp với hệ quản trị PostgreSQL thực sự là một giải pháp chuẩn mực để hệ thống mở rộng (scale) và chịu tải tốt hơn ở môi trường production. Tuy nhiên, ở bối cảnh tối ưu hiệu năng cục bộ cho dự án EShop hiện tại, đây là một đề xuất "đập đi xây lại" toàn bộ tầng ORM và Database (overkill). Nó tốn kém quá nhiều chi phí tái cấu trúc và đi chệch hướng so với mục tiêu tinh chỉnh (tuning) hệ thống hiện có.
 
 ---
 
