@@ -1,5 +1,16 @@
 # Bug & Performance Issues Report
 
+**Thông tin sinh viên:**
+
+- **Họ và tên:** Trần Thanh Trí
+- **MSSV:** 23127503
+- **Lớp:** 23KTPM2
+- **Môn học:** Kiểm thử phần mềm
+- **Hệ thống (SUT):** EShop
+- **Public GitHub Repository:** https://github.com/Triszz/HW05-Performance_Testing
+
+---
+
 ## Issue 1: [Functional Bug] Hệ thống cho phép đăng ký hàng loạt tài khoản trùng Email
 
 - **Endpoint:** `POST /api/register`

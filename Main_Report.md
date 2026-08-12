@@ -7,6 +7,7 @@
 - **Lớp:** 23KTPM2
 - **Môn học:** Kiểm thử phần mềm
 - **Hệ thống (SUT):** EShop
+- **Public GitHub Repository:** https://github.com/Triszz/HW05-Performance_Testing
 
 ---
 
@@ -87,6 +88,44 @@ _Đính kèm ảnh chụp màn hình hiển thị CÙNG LÚC phần mềm JMeter
 - **Maximum Stable RPS (Throughput):** Hệ thống duy trì tải cực kỳ ổn định ở mức **~24.0 req/sec** (chính xác là 23.98 req/sec) trong suốt 10 phút mà không phát sinh bất kỳ lỗi nào (Error Rate: 0%). Tốc độ phản hồi (Response Time) vô cùng xuất sắc với mức trung bình (Mean) là 2.33ms và 95th percentile (pct2) chỉ đạt 4.0ms.
 - **Memory Ceiling & Resource Usage:** Mặc dù CPU hoạt động khá nhẹ nhàng (chỉ ở mức ~14% cho chip Intel Core i5-1240P), nhưng **RAM đã chạm đỉnh 14.4 GB / 15.7 GB (tức 92% công suất phần cứng)**.
 - **Kết luận:** Ngưỡng chịu đựng (Endurance Threshold) của hệ thống SUT trên phần cứng hiện tại bị giới hạn bởi bộ nhớ (Memory-bound). Backend xử lý các tác vụ truy xuất dữ liệu rất nhanh, nhưng nếu duy trì tải này lâu hơn 10 phút hoặc tăng thêm số lượng Virtual Users, server có nguy cơ cao bị crash do tràn RAM (Out of Memory) thay vì quá tải CPU.
+
+### 1.6. Defect Discovery & Reported Issues
+
+Trong quá trình thực thi các kịch bản Performance Testing, thay vì chỉ đánh giá các thông số hiệu năng thông thường, em đã theo dõi sát sao sự tương quan giữa thông lượng (Throughput), tải tài nguyên (CPU) và tính toàn vẹn của dữ liệu trong Database. Qua đó, em đã phát hiện và report thành công 2 lỗi nghiêm trọng lên hệ thống theo dõi lỗi của dự án (GitHub Issues):
+
+**Issue 1: [Functional Bug] Hệ thống cho phép đăng ký hàng loạt tài khoản trùng Email**
+
+- **Endpoint:** `POST /api/register`
+
+- **Type:** Functional Bug / Security Issue
+
+- **Description:** Trong quá trình chạy Spike Test với 150 Threads sử dụng cùng một địa chỉ email tĩnh (do kịch bản AI sinh ra), toàn bộ 150 requests đều trả về `200 OK - User registered successfully`. Kiểm tra lại Database cho thấy hệ thống đã thực sự tạo ra 150 user khác nhau (ID khác nhau) nhưng dùng chung một địa chỉ Email. Hệ thống đã thiếu sót hoàn toàn việc kiểm tra Unique Constraint ở tầng Database và Validation ở Backend, gây rủi ro lớn về bảo mật và quản lý định danh.
+
+- **GitHub Issue Link:** https://github.com/Triszz/HW05-Performance_Testing/issues/1
+
+- **Evidence (Screenshot):**
+
+  ![alt text](images/image.png)
+
+  ![alt text](images/image-1.png)
+
+**Issue 2: [Security/Critical Bug] Mật khẩu người dùng lưu dưới dạng Plain-text (Không mã hóa)**
+
+- **Endpoint:** `POST /api/register`
+
+- **Type:** Security Vulnerability / Architectural Flaw
+
+- **Description:** Qua quá trình chạy Spike Test và đối chiếu với mức tiêu thụ CPU thấp bất thường (chỉ 11%), em đã tiến hành kiểm tra dữ liệu trực tiếp dưới Database (SQLite). Kết quả phát hiện toàn bộ mật khẩu người dùng đều được lưu trữ ở định dạng văn bản thuần túy (Plain-text, ví dụ: `Password123!`) mà không trải qua bất kỳ thuật toán băm (hashing) nào (như bcrypt hay Argon2). Đây là lỗ hổng bảo mật cực kỳ nghiêm trọng (Thuộc danh mục OWASP Top 10 - Cryptographic Failures). Về mặt hiệu năng, việc bỏ sót logic mã hóa này chính là nguyên nhân làm sai lệch kết quả kiểm thử, khiến CPU không bị dội tải (bottleneck) như kỳ vọng ban đầu của kịch bản Auth-heavy.
+
+- **GitHub Issue Link:** https://github.com/Triszz/HW05-Performance_Testing/issues/2
+
+- **Evidence (Screenshot):**
+
+  ![alt text](images/image-1.png)
+
+### 1.7. Demo Video
+
+- **YouTube Unlisted Link:** https://youtu.be/d9Kchasc_5c
 
 ## Task 2: AI Analysis and Misinterpretation Hunt
 
